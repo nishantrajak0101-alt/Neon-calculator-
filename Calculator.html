@@ -1,0 +1,439 @@
+<!DOCTYPE html><html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Advanced Neon Calculator</title>
+  <style>
+    :root {
+      --bg: #0b0f1a;
+      --panel: #0f1629;
+      --text: #e8f0ff;
+      --muted: #94a3b8;
+      --accent1: #7c3aed; /* purple */
+      --accent2: #06b6d4; /* cyan */
+      --accent3: #22c55e; /* green */
+      --danger: #ef4444;
+      --glow: 0 0 12px rgba(124, 58, 237, .65), 0 0 22px rgba(6, 182, 212, .35);
+      --radius: 18px;
+      --shadow-soft: 0 10px 30px rgba(2, 6, 23, .55);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: radial-gradient(1200px 1200px at 20% -20%, rgba(124, 58, 237, .12), transparent 40%),
+                  radial-gradient(1100px 1100px at 120% 120%, rgba(6, 182, 212, .12), transparent 42%),
+                  var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }.calc {
+  width: 100%;
+  max-width: 430px;
+  background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)), var(--panel);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft), inset 0 0 0 1px rgba(148, 163, 184, .08);
+  overflow: hidden;
+  position: relative;
+  isolation: isolate;
+}
+
+/* soft neon edge */
+.calc::before {
+  content: "";
+  position: absolute; inset: -2px;
+  background: conic-gradient(from 180deg at 50% 50%, var(--accent1), var(--accent2), var(--accent3), var(--accent1));
+  filter: blur(18px) saturate(160%);
+  opacity: .18;
+  z-index: -1;
+}
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, .08);
+  backdrop-filter: blur(8px);
+}
+.brand {
+  display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .3px;
+}
+.pulse {
+  width: 10px; height: 10px; border-radius: 999px;
+  background: radial-gradient(circle at 40% 40%, #fff, #22c55e 40%, transparent 60%);
+  box-shadow: 0 0 16px #22c55e;
+  animation: pulse 2.6s ease-in-out infinite;
+}
+@keyframes pulse { 0%, 100% { transform: scale(.95); opacity: .8 } 50% { transform: scale(1.15); opacity: 1 } }
+
+.display {
+  padding: 16px 16px 8px;
+}
+.expr {
+  min-height: 24px;
+  color: var(--muted);
+  font-size: 14px;
+  letter-spacing: .4px;
+  word-break: break-all;
+  opacity: .85;
+}
+.result {
+  margin-top: 6px;
+  font-size: 40px;
+  font-weight: 700;
+  text-align: right;
+  letter-spacing: .6px;
+  text-shadow: var(--glow);
+  word-break: break-all;
+}
+
+.row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.pad { padding: 14px 16px 18px; }
+
+.btn {
+  appearance: none; border: 0; border-radius: 14px;
+  font-size: 18px; font-weight: 600; letter-spacing: .3px; color: #e6f0ff;
+  padding: 16px; cursor: pointer;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  box-shadow: 0 6px 16px rgba(2,6,23,.45), inset 0 0 0 1px rgba(148,163,184,.14);
+  transition: transform .08s ease, box-shadow .2s ease, filter .2s ease;
+  user-select: none;
+}
+.btn:active { transform: translateY(1px) scale(.995); filter: brightness(.96); }
+.btn.op { color: #cde4ff; background: linear-gradient(180deg, rgba(124,58,237,.22), rgba(6,182,212,.12)); box-shadow: 0 10px 26px rgba(124, 58, 237, .25), inset 0 0 0 1px rgba(124,58,237,.38); }
+.btn.eq { background: linear-gradient(180deg, rgba(34,197,94,.32), rgba(6,182,212,.16)); box-shadow: 0 10px 28px rgba(34,197,94,.35), inset 0 0 0 1px rgba(34,197,94,.45); }
+.btn.danger { background: linear-gradient(180deg, rgba(239,68,68,.32), rgba(239,68,68,.16)); box-shadow: 0 10px 24px rgba(239,68,68,.3), inset 0 0 0 1px rgba(239,68,68,.5); }
+.btn.ghost { color: var(--muted); background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)); }
+
+.wide { grid-column: span 2; }
+
+.toolbar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 0 16px 14px; }
+.toggle {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  border-radius: 999px; padding: 10px 14px; font-size: 13px; color: #dbeafe;
+  background: linear-gradient(90deg, rgba(124,58,237,.22), rgba(6,182,212,.18));
+  box-shadow: inset 0 0 0 1px rgba(124,58,237,.35), 0 8px 20px rgba(6,182,212,.2);
+}
+.toggle input { appearance: none; width: 34px; height: 20px; border-radius: 999px; background: rgba(255,255,255,.2); position: relative; outline: none; }
+.toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 999px; background: white; transition: left .2s ease; }
+.toggle input:checked::after { left: 16px; }
+
+.history {
+  max-height: 140px; overflow: auto; padding: 0 16px 12px; display: none;
+}
+.history.show { display: block; }
+.history h4 { margin: 0 0 8px; font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .4px; }
+.history ul { margin: 0; padding: 0; list-style: none; }
+.history li { padding: 8px 10px; border-radius: 10px; margin-bottom: 6px; background: rgba(148, 163, 184, .06); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.history li button { font-size: 12px; padding: 6px 10px; }
+
+.footer { text-align: center; font-size: 12px; color: var(--muted); padding: 10px 14px 14px; }
+.kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: rgba(148,163,184,.14); padding: 2px 6px; border-radius: 6px; }
+
+@media (max-width: 380px) {
+  .result { font-size: 34px; }
+  .btn { font-size: 16px; padding: 14px; }
+}
+
+  </style>
+</head>
+<body>
+  <main class="calc" id="calc">
+    <div class="topbar">
+      <div class="brand"><span class="pulse"></span> Advanced Neon Calc</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn ghost" id="historyBtn" title="Toggle History">History</button>
+        <label class="toggle" title="Radians / Degrees">
+          <span>Rad</span>
+          <input type="checkbox" id="degToggle" />
+          <span>Deg</span>
+        </label>
+      </div>
+    </div><section class="display" aria-live="polite">
+  <div class="expr" id="expression"></div>
+  <div class="result" id="result">0</div>
+</section>
+
+<section class="history" id="history">
+  <h4>History</h4>
+  <ul id="historyList"></ul>
+</section>
+
+<section class="toolbar">
+  <button class="btn ghost" data-action="mc">MC</button>
+  <button class="btn ghost" data-action="mr">MR</button>
+  <button class="btn ghost" data-action="mplus">M+</button>
+  <button class="btn ghost" data-action="mminus">M-</button>
+  <button class="btn ghost" id="clrHistory">CLR-H</button>
+</section>
+
+<section class="pad">
+  <div class="row" style="margin-bottom:10px;">
+    <button class="btn danger" data-action="clear">AC</button>
+    <button class="btn ghost" data-action="back">⌫</button>
+    <button class="btn op" data-value="%">%</button>
+    <button class="btn op" data-value="/">÷</button>
+  </div>
+  <div class="row" style="margin-bottom:10px;">
+    <button class="btn ghost" data-fn="sin">sin</button>
+    <button class="btn ghost" data-fn="cos">cos</button>
+    <button class="btn ghost" data-fn="tan">tan</button>
+    <button class="btn ghost" data-fn="sqrt">√</button>
+  </div>
+  <div class="row" style="margin-bottom:10px;">
+    <button class="btn ghost" data-fn="asin">asin</button>
+    <button class="btn ghost" data-fn="acos">acos</button>
+    <button class="btn ghost" data-fn="atan">atan</button>
+    <button class="btn ghost" data-fn="pow2">x²</button>
+  </div>
+  <div class="row" style="margin-bottom:10px;">
+    <button class="btn ghost" data-fn="log10">log</button>
+    <button class="btn ghost" data-fn="ln">ln</button>
+    <button class="btn ghost" data-value="(">(</button>
+    <button class="btn ghost" data-value=")">)</button>
+  </div>
+  <div class="row">
+    <button class="btn" data-value="7">7</button>
+    <button class="btn" data-value="8">8</button>
+    <button class="btn" data-value="9">9</button>
+    <button class="btn op" data-value="*">×</button>
+  </div>
+  <div class="row">
+    <button class="btn" data-value="4">4</button>
+    <button class="btn" data-value="5">5</button>
+    <button class="btn" data-value="6">6</button>
+    <button class="btn op" data-value="-">−</button>
+  </div>
+  <div class="row">
+    <button class="btn" data-value="1">1</button>
+    <button class="btn" data-value="2">2</button>
+    <button class="btn" data-value="3">3</button>
+    <button class="btn op" data-value="+">+</button>
+  </div>
+  <div class="row">
+    <button class="btn" data-value="0" class="wide">0</button>
+    <button class="btn" data-action="sign">±</button>
+    <button class="btn" data-value=".">.</button>
+    <button class="btn eq" data-action="equals">=</button>
+  </div>
+  <div class="row" style="margin-top:10px;">
+    <button class="btn ghost" data-const="PI">π</button>
+    <button class="btn ghost" data-const="E">e</button>
+    <button class="btn ghost" data-fn="pow">x^y</button>
+    <button class="btn ghost" id="copyBtn">Copy</button>
+  </div>
+</section>
+
+<div class="footer">
+  टिप: कीबोर्ड से भी टाइप करें – <span class="kbd">0-9</span>, <span class="kbd">+ − × ÷</span>, <span class="kbd">( ) .</span>, <span class="kbd">Enter</span>, <span class="kbd">Backspace</span>
+</div>
+
+  </main>  <script>
+    const exprEl = document.getElementById('expression');
+    const resultEl = document.getElementById('result');
+    const historyWrap = document.getElementById('history');
+    const historyBtn = document.getElementById('historyBtn');
+    const historyList = document.getElementById('historyList');
+    const clrHistory = document.getElementById('clrHistory');
+    const degToggle = document.getElementById('degToggle');
+    const copyBtn = document.getElementById('copyBtn');
+
+    let memory = 0; // M+, M-, MR, MC
+
+    // ---- History helpers ----
+    const loadHistory = () => JSON.parse(localStorage.getItem('neonCalcHist') || '[]');
+    const saveHistory = (arr) => localStorage.setItem('neonCalcHist', JSON.stringify(arr.slice(-30))); // keep last 30
+
+    function renderHistory() {
+      const items = loadHistory();
+      historyList.innerHTML = '';
+      items.slice().reverse().forEach(([e, r]) => {
+        const li = document.createElement('li');
+        const span = document.createElement('span');
+        span.textContent = `${e} = ${r}`;
+        const useBtn = document.createElement('button');
+        useBtn.className = 'btn ghost';
+        useBtn.textContent = 'Use';
+        useBtn.onclick = () => { exprEl.textContent = String(r); resultEl.textContent = String(r); };
+        li.append(span, useBtn);
+        historyList.appendChild(li);
+      });
+    }
+
+    historyBtn.addEventListener('click', () => {
+      historyWrap.classList.toggle('show');
+      if (historyWrap.classList.contains('show')) renderHistory();
+    });
+    clrHistory.addEventListener('click', () => { saveHistory([]); renderHistory(); });
+
+    copyBtn.addEventListener('click', async () => {
+      const txt = resultEl.textContent.trim();
+      try { await navigator.clipboard.writeText(txt); copyBtn.textContent = 'Copied!'; setTimeout(()=>copyBtn.textContent='Copy', 900); } catch {}
+    });
+
+    // ---- Expression building ----
+    function insert(val) {
+      exprEl.textContent += val;
+      preview();
+    }
+
+    function backspace() {
+      exprEl.textContent = exprEl.textContent.slice(0, -1);
+      preview();
+    }
+
+    function clearAll() {
+      exprEl.textContent = '';
+      resultEl.textContent = '0';
+    }
+
+    function toggleSign() {
+      const e = exprEl.textContent;
+      // Toggle sign of the last number
+      const m = e.match(/(.*?)([\d\.]+)(?!.*[\d\.])/); // last number
+      if (m) {
+        const before = m[1];
+        let num = m[2];
+        if (before.endsWith('(-')) { // already negative format
+          exprEl.textContent = before.slice(0, -2) + num + ')';
+        } else if (/[-+*/^(]$/.test(before) || before === '') {
+          exprEl.textContent = before + '(-' + num + ')';
+        } else {
+          exprEl.textContent = before + '(-' + num + ')';
+        }
+        preview();
+      }
+    }
+
+    function percent() {
+      // Convert last number to number/100
+      const e = exprEl.textContent;
+      const m = e.match(/(.*?)([\d\.]+)(?!.*[\d\.])/);
+      if (m) {
+        const before = m[1];
+        const num = m[2];
+        exprEl.textContent = before + '(' + num + '/100)';
+        preview();
+      }
+    }
+
+    // ---- Evaluation ----
+    function toRadians(x) { return x * Math.PI / 180; }
+    function fromRadians(x) { return x * 180 / Math.PI; }
+
+    function transform(expr) {
+      // Replace pretty symbols to JS-compatible
+      let s = expr.replace(/[×x]/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+      // Constants π, e (standalone)
+      s = s.replace(/π/g, 'Math.PI');
+      s = s.replace(/(?<![A-Za-z0-9_])e(?![A-Za-z0-9_])/g, 'Math.E');
+      // Power x^y -> Math.pow(x,y)
+      // handle ^ by converting a^b to pow(a,b)
+      s = s.replace(/(\b[\d\.]+|\)|Math\.E|Math\.PI)\s*\^\s*(\b[\d\.]+|\(|Math\.[A-Z]+|\b)/g, 'Math.pow($1,$2)');
+      // sqrt symbol
+      s = s.replace(/√\(/g, 'Math.sqrt(');
+      // functions
+      s = s.replace(/\bpow\(/g, 'Math.pow(');
+      s = s.replace(/\blog10\(/g, 'Math.log10(');
+      s = s.replace(/\bln\(/g, 'Math.log(');
+      // trig with degree toggle
+      if (degToggle.checked) {
+        s = s.replace(/\bsin\(/g, 'Math.sin(toRadians(');
+        s = s.replace(/\bcos\(/g, 'Math.cos(toRadians(');
+        s = s.replace(/\btan\(/g, 'Math.tan(toRadians(');
+        s = s.replace(/\basin\(/g, 'fromRadians(Math.asin(');
+        s = s.replace(/\bacos\(/g, 'fromRadians(Math.acos(');
+        s = s.replace(/\batan\(/g, 'fromRadians(Math.atan(');
+      } else {
+        s = s.replace(/\bsin\(/g, 'Math.sin(');
+        s = s.replace(/\bcos\(/g, 'Math.cos(');
+        s = s.replace(/\btan\(/g, 'Math.tan(');
+        s = s.replace(/\basin\(/g, 'Math.asin(');
+        s = s.replace(/\bacos\(/g, 'Math.acos(');
+        s = s.replace(/\batan\(/g, 'Math.atan(');
+      }
+      // safe characters only
+      if (/[^0-9+\-*/()\.^%\sA-Za-z_,]|(\.{2,})/.test(expr)) throw new Error('Invalid input');
+      return s;
+    }
+
+    function evaluateExpression(expr) {
+      if (!expr) return 0;
+      const s = transform(expr);
+      // wrap with helpers in scope
+      const fn = new Function('Math', 'toRadians', 'fromRadians', `return ( ${s} )`);
+      return fn(Math, toRadians, fromRadians);
+    }
+
+    function preview() {
+      try {
+        const v = evaluateExpression(exprEl.textContent);
+        if (Number.isFinite(v)) resultEl.textContent = (Math.round(v * 1e12) / 1e12).toString();
+      } catch (e) { /* ignore live errors */ }
+    }
+
+    function equals() {
+      try {
+        const e = exprEl.textContent;
+        const v = evaluateExpression(e);
+        const rounded = Number.isFinite(v) ? (Math.round(v * 1e12) / 1e12) : v;
+        resultEl.textContent = String(rounded);
+        saveHistory([...loadHistory(), [e, rounded]]);
+      } catch (err) {
+        resultEl.textContent = 'Error';
+      }
+    }
+
+    // ---- Memory operations ----
+    function memoryAction(type) {
+      const cur = parseFloat(resultEl.textContent) || 0;
+      if (type === 'mc') memory = 0;
+      if (type === 'mr') exprEl.textContent += memory.toString();
+      if (type === 'mplus') memory += cur;
+      if (type === 'mminus') memory -= cur;
+      preview();
+    }
+
+    // ---- Button wiring ----
+    document.addEventListener('click', (e) => {
+      const t = e.target.closest('button');
+      if (!t) return;
+      if (t.dataset.value) {
+        insert(t.dataset.value);
+      } else if (t.dataset.fn) {
+        const f = t.dataset.fn;
+        if (f === 'sqrt') insert('√(');
+        else if (f === 'pow2') insert('^2');
+        else if (f === 'pow') insert('^');
+        else if (f === 'log10') insert('log10(');
+        else if (f === 'ln') insert('ln(');
+        else insert(f + '(');
+      } else if (t.dataset.action) {
+        const a = t.dataset.action;
+        if (a === 'clear') clearAll();
+        if (a === 'back') backspace();
+        if (a === 'equals') equals();
+        if (a === 'sign') toggleSign();
+      } else if (t.dataset.const) {
+        insert(t.dataset.const === 'PI' ? 'π' : 'e');
+      } else if (t.id === 'clrHistory') {
+        // handled by listener above
+      } else if (t.textContent === '%') {
+        percent();
+      }
+    });
+
+    // ---- Keyboard support ----
+    document.addEventListener('keydown', (e) => {
+      const k = e.key;
+      if (/^[0-9()+\-*/.^]$/.test(k)) { insert(k); }
+      else if (k === 'Enter' || k === '=') { e.preventDefault(); equals(); }
+      else if (k === 'Backspace') { backspace(); }
+      else if (k.toLowerCase() === 'p' && e.altKey) { insert('π'); }
+    });
+
+    // initial
+    preview();
+  </script></body>
+</html>
