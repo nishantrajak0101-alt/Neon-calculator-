@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Neon Calculator</title>
+<style>
+  body {
+    background: #0a0a0f;
+    color: #fff;
+    font-family: "Poppins", sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  .calc {
+    width: 360px;
+    background: #111;
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 0 30px #0ff;
+  }
+  .display {
+    text-align: right;
+    background: #000;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    font-size: 20px;
+    box-shadow: inset 0 0 15px #0ff;
+  }
+  .expr { font-size: 16px; color: #0ff; }
+  .result { font-size: 26px; font-weight: bold; }
+  .btn {
+    background: #111;
+    border: none;
+    color: #fff;
+    padding: 15px;
+    margin: 5px;
+    border-radius: 12px;
+    font-size: 18px;
+    flex: 1;
+    box-shadow: 0 0 10px #0ff;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .btn:hover {
+    background: #0ff;
+    color: #111;
+    box-shadow: 0 0 20px #0ff;
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+  }
+  .eq {
+    background: #0ff;
+    color: #111;
+    font-weight: bold;
+    box-shadow: 0 0 20px #0ff;
+  }
+  .danger { background: #f00; box-shadow: 0 0 20px #f00; }
+  .op { color: #0ff; }
+  .footer {
+    margin-top: 15px;
+    font-size: 12px;
+    color: #aaa;
+    text-align: center;
+  }
+  .kbd {
+    background: #222;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #0ff;
+  }
+</style>
+</head>
+<body>
+<div class="calc">
+  
+  <section class="display" aria-live="polite">
+    <div class="expr" id="expression"></div>
+    <div class="result" id="result">0</div>
+  </section>
+  
+  <section class="history" id="history">
+    <h4>History</h4>
+    <ul id="historyList"></ul>
+  </section>
+
+  <section class="pad">
+    <div class="row">
+      <button class="btn danger" data-action="clear">AC</button>
+      <button class="btn" data-action="back">⌫</button>
+      <button class="btn op" data-value="%">%</button>
+      <button class="btn op" data-value="/">÷</button>
+    </div>
+    <div class="row">
+      <button class="btn" data-fn="sin">sin</button>
+      <button class="btn" data-fn="cos">cos</button>
+      <button class="btn" data-fn="tan">tan</button>
+      <button class="btn" data-fn="sqrt">√</button>
+    </div>
+    <div class="row">
+      <button class="btn" data-fn="asin">asin</button>
+      <button class="btn" data-fn="acos">acos</button>
+      <button class="btn" data-fn="atan">atan</button>
+      <button class="btn" data-fn="pow2">x²</button>
+    </div>
+    <div class="row">
+      <button class="btn" data-fn="log10">log</button>
+      <button class="btn" data-fn="ln">ln</button>
+      <button class="btn" data-value="(">(</button>
+      <button class="btn" data-value=")">)</button>
+    </div>
+    <div class="row">
+      <button class="btn" data-value="7">7</button>
+      <button class="btn" data-value="8">8</button>
+      <button class="btn" data-value="9">9</button>
+      <button class="btn op" data-value="*">×</button>
+    </div>
+    <div class="row">
+      <button class="btn" data-value="4">4</button>
+      <button class="btn" data-value="5">5</button>
+      <button class="btn" data-value="6">6</button>
+      <button class="btn op" data-value="-">−</button>
+    </div>
+    <div class="row">
+      <button class="btn" data-value="1">1</button>
+      <button class="btn" data-value="2">2</button>
+      <button class="btn" data-value="3">3</button>
+      <button class="btn op" data-value="+">+</button>
+    </div>
+    <div class="row">
+      <button class="btn" data-value="0">0</button>
+      <button class="btn" data-action="sign">±</button>
+      <button class="btn" data-value=".">.</button>
+      <button class="btn eq" data-action="equals">=</button>
+    </div>
+    <div class="row">
+      <button class="btn" data-const="PI">π</button>
+      <button class="btn" data-const="E">e</button>
+      <button class="btn" data-fn="pow">x^y</button>
+      <button class="btn" id="copyBtn">Copy</button>
+    </div>
+  </section>
+
+  <div class="footer">
+    टिप: कीबोर्ड से भी टाइप करें – 
+    <span class="kbd">0-9</span>, <span class="kbd">+ − × ÷</span>, 
+    <span class="kbd">( ) .</span>, <span class="kbd">Enter</span>, 
+    <span class="kbd">Backspace</span>
+  </div>
+</div>
+
+<script>
+let expr = "";
+let resultEl = document.getElementById("result");
+let exprEl = document.getElementById("expression");
+let historyList = document.getElementById("historyList");
+
+function updateDisplay() {
+  exprEl.textContent = expr;
+}
+
+function calculate() {
+  try {
+    let res = eval(expr.replace(/÷/g,"/").replace(/×/g,"*"));
+    resultEl.textContent = res;
+    addHistory(expr + " = " + res);
+    expr = res.toString();
+  } catch {
+    resultEl.textContent = "Error";
+  }
+}
+
+function addHistory(item){
+  let li = document.createElement("li");
+  li.textContent = item;
+  historyList.appendChild(li);
+}
+
+document.querySelectorAll(".btn").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    let val = btn.dataset.value;
+    let fn = btn.dataset.fn;
+    let act = btn.dataset.action;
+    let cst = btn.dataset.const;
+    if(val){ expr += val; }
+    if(cst){ expr += (cst=="PI" ? "Math.PI" : "Math.E"); }
+    if(fn){
+      if(fn=="sqrt") expr += "Math.sqrt(";
+      if(fn=="sin") expr += "Math.sin(";
+      if(fn=="cos") expr += "Math.cos(";
+      if(fn=="tan") expr += "Math.tan(";
+      if(fn=="asin") expr += "Math.asin(";
+      if(fn=="acos") expr += "Math.acos(";
+      if(fn=="atan") expr += "Math.atan(";
+      if(fn=="log10") expr += "Math.log10(";
+      if(fn=="ln") expr += "Math.log(";
+      if(fn=="pow2") expr += "**2";
+      if(fn=="pow") expr += "**";
+    }
+    if(act=="clear"){ expr=""; resultEl.textContent="0"; }
+    if(act=="back"){ expr = expr.slice(0,-1); }
+    if(act=="equals"){ calculate(); }
+    if(act=="sign"){ expr = expr.startsWith("-")? expr.slice(1): "-"+expr; }
+    updateDisplay();
+  });
+});
+
+document.getElementById("copyBtn").addEventListener("click",()=>{
+  navigator.clipboard.writeText(resultEl.textContent);
+  alert("Copied: " + resultEl.textContent);
+});
+</script>
+</body>
+</html>
